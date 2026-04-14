@@ -88,16 +88,37 @@ The system syncs contacts to HubSpot using:
 - a persona-based segmentation field
 - dry-run mode for safe testing
 
-### 3. Campaign Logging
-Each pipeline run generates a CRM note payload containing:
+### 3. Persona-Based Newsletter Distribution
+After content generation, the pipeline maps each contact to the correct persona-specific newsletter version based on the `persona_segment` field.
+
+For each contact, the system prepares a realistic send payload that includes:
+- contact email
+- persona segment
+- email template ID
+- newsletter subject
+- preview text
+- body copy
+- CTA text
+- send status
+
+This distribution step is currently implemented in dry-run mode, which allows safe testing while still demonstrating realistic send logic and payload structure.
+
+### 4. Campaign Logging
+Each newsletter send event is logged to SQLite for traceability and historical analysis.
+
+Every campaign log record stores:
 - topic
 - blog title
-- generated content file path
-- summary file path
+- persona segment
+- contact email
+- newsletter subject
+- template ID
+- send status
+- send date
 
-This is currently implemented in dry-run mode for demo reliability.
+This makes the pipeline more analysis-ready and better aligned with real marketing operations workflows.
 
-### 4. Performance Simulation and Analysis
+### 5. Performance Simulation and Analysis
 The system simulates:
 - open rate
 - click rate
@@ -163,30 +184,32 @@ The pipeline prints:
 - suggested next blog topic: Maximizing Productivity with AI-Powered Creative Tools
 
 ## Current Status
-- Implemented
+### Implemented
 - local end-to-end pipeline
 - AI content generation
 - persona-specific newsletter generation
+- persona-based newsletter send payload generation in dry-run mode
 - JSON content storage
 - SQLite logging
+- campaign send logging to SQLite
 - HubSpot contact sync in dry-run mode
 - HubSpot campaign note logging in dry-run mode
 - simulated campaign performance metrics
 - AI-generated performance summary
-- Not Fully Implemented
-- live email sending through HubSpot
-- live performance metric pull from a real CRM or email platform
-- dashboard or frontend interface
 
 ## Future Improvements
 - enable live HubSpot contact sync by switching off dry-run mode
 - connect persona-based email templates for actual newsletter distribution
+- replace dry-run newsletter payload generation with live send execution
+- associate HubSpot campaign notes with individual CRM contacts
 - add a dashboard using Streamlit
 - support A/B testing for subject lines
 - generate next topic recommendations based on historical campaign performance
 - add approval or review steps before publishing generated content
 
 ## Why Dry-Run Mode
-Dry-run mode makes the demo safer and more reliable. It allows the system to show realistic HubSpot payloads and workflow design without depending on portal permissions, email template availability, or live sending configuration.
+Dry-run mode makes the demo safer, more reproducible, and easier to evaluate. It allows the project to demonstrate realistic HubSpot payloads, persona-based newsletter distribution logic, and campaign logging behavior without depending on portal permissions, email template availability, or live sending configuration.
+
+This approach keeps the workflow implementation concrete while avoiding avoidable delivery failures during evaluation.
 
 

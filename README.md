@@ -113,7 +113,8 @@ Every campaign log record stores:
 - persona segment
 - contact email
 - newsletter subject
-- template ID
+- HubSpot email ID
+- HubSpot send status ID
 - send status
 - send date
 
@@ -213,6 +214,7 @@ The pipeline prints:
 Dry-run mode makes the demo safer, more reproducible, and easier to evaluate. It allows the project to demonstrate realistic HubSpot payloads, persona-based newsletter distribution logic, and campaign logging behavior without depending on portal permissions, email template availability, or live sending configuration.
 
 This approach keeps the workflow implementation concrete while avoiding avoidable delivery failures during evaluation.
+
 
 
 

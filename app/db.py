@@ -28,6 +28,7 @@ def init_db():
         contact_email TEXT,
         newsletter_subject TEXT,
         hubspot_email_id TEXT,
+        hubspot_send_status_id TEXT,
         send_status TEXT,
         send_date TEXT
     )
@@ -38,6 +39,10 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         topic TEXT,
         persona_segment TEXT,
+        recipient_count INTEGER,
+        open_count INTEGER,
+        click_count INTEGER,
+        unsubscribe_count INTEGER,
         open_rate REAL,
         click_rate REAL,
         unsubscribe_rate REAL,
@@ -56,5 +61,7 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+
 
 

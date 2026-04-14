@@ -32,6 +32,7 @@ def log_campaign_send(
     contact_email: str,
     newsletter_subject: str,
     hubspot_email_id: str | None,
+    hubspot_send_status_id: str | None,
     send_status: str,
 ):
     conn = get_conn()
@@ -39,9 +40,10 @@ def log_campaign_send(
     cur.execute("""
     INSERT INTO campaign_logs (
         topic, blog_title, persona_segment, contact_email,
-        newsletter_subject, hubspot_email_id, send_status, send_date
+        newsletter_subject, hubspot_email_id, hubspot_send_status_id,
+        send_status, send_date
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         topic,
         blog_title,
@@ -49,6 +51,7 @@ def log_campaign_send(
         contact_email,
         newsletter_subject,
         hubspot_email_id,
+        hubspot_send_status_id,
         send_status,
         datetime.now(UTC).isoformat()
     ))
@@ -92,26 +95,36 @@ def run_pipeline(topic: str):
     print("freelancer:", content["newsletters"]["freelancer"]["subject"])
 
     print("\n[2/6] Preparing persona-based newsletter sends...")
+    send_results = []
+    
     for contact in contacts:
         persona = contact["persona_segment"]
         newsletter = content["newsletters"][persona]
-        template_id = EMAIL_TEMPLATE_IDS.get(persona)
+        hubspot_email_id = EMAIL_TEMPLATE_IDS.get(persona)
 
-        send_result = send_newsletter(contact, newsletter, template_id)
+        send_result = send_newsletter(contact, newsletter, hubspot_email_id)
         print(send_result)
-
+        
+        send_results.append({
+            "persona_segment": persona,
+            "contact_email": contact["email"],
+            "hubspot_email_id": send_result.get("hubspot_email_id"),
+            "statusId": send_result.get("statusId"),
+            "send_status": send_result["status"],
+        }) 
         log_campaign_send(
             topic=topic,
             blog_title=blog_title,
             persona_segment=persona,
             contact_email=contact["email"],
             newsletter_subject=newsletter["subject"],
-            hubspot_email_id=template_id,
+            hubspot_email_id=str(send_result.get("hubspot_email_id")) if send_result.get("hubspot_email_id") is not None else None,
+            hubspot_send_status_id=send_result.get("statusId"),
             send_status=send_result["status"],
-        )
+         )
 
     print("\n[3/6] Simulating metrics...")
-    metrics = simulate_metrics(topic)
+    metrics = simulate_metrics(topic, send_results)
     print(metrics)
 
     print("\n[4/6] Generating AI performance summary...")
@@ -149,6 +162,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     run_pipeline(args.topic)
+
+
 
 
 

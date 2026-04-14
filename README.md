@@ -34,9 +34,10 @@ Topic Input
 → JSON Content Storage  
 → Contact Segmentation via CSV  
 → HubSpot Contact Sync (dry-run supported)  
-→ Simulated Campaign Metrics  
-→ AI Performance Summary  
-→ SQLite Logging
+→ Persona-Based Newsletter Distribution (dry-run)  
+→ Campaign Logging to SQLite  
+→ Metrics Simulation with Send Context  
+→ AI Performance Summary with Historical Comparison
 
 ## Tools Used
 - Python
@@ -163,7 +164,6 @@ FREELANCER_EMAIL_ID=
 ### 4. Run the pipeline
 ```bash
 python3 -m app.main --topic "AI in creative automation"
-Example Output
 ```
 ## Example Output
 
@@ -196,6 +196,8 @@ The pipeline prints:
 - HubSpot campaign note logging in dry-run mode
 - simulated campaign performance metrics
 - AI-generated performance summary
+- metrics simulation now includes send context such as recipient count, open count, click count, and unsubscribe count
+- AI performance summaries compare the current run against historical averages when available
 
 ## Future Improvements
 - enable live HubSpot contact sync by switching off dry-run mode
@@ -211,5 +213,7 @@ The pipeline prints:
 Dry-run mode makes the demo safer, more reproducible, and easier to evaluate. It allows the project to demonstrate realistic HubSpot payloads, persona-based newsletter distribution logic, and campaign logging behavior without depending on portal permissions, email template availability, or live sending configuration.
 
 This approach keeps the workflow implementation concrete while avoiding avoidable delivery failures during evaluation.
+
+
 
 

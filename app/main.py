@@ -2,8 +2,9 @@ import argparse
 from datetime import datetime, UTC
 import os
 import pandas as pd
-from app.hubspot_client import upsert_contacts, create_note
-from app.config import OPENAI_API_KEY
+
+from app.hubspot_client import upsert_contacts, create_note, send_newsletter
+from app.config import OPENAI_API_KEY, EMAIL_TEMPLATE_IDS
 from app.db import init_db, get_conn
 from app.generate_content import generate_content
 from app.metrics import simulate_metrics
@@ -24,11 +25,44 @@ def save_content_run(topic: str, blog_title: str, content_json_path: str):
     conn.commit()
     conn.close()
 
+def log_campaign_send(
+    topic: str,
+    blog_title: str,
+    persona_segment: str,
+    contact_email: str,
+    newsletter_subject: str,
+    hubspot_email_id: str | None,
+    send_status: str,
+):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+    INSERT INTO campaign_logs (
+        topic, blog_title, persona_segment, contact_email,
+        newsletter_subject, hubspot_email_id, send_status, send_date
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        topic,
+        blog_title,
+        persona_segment,
+        contact_email,
+        newsletter_subject,
+        hubspot_email_id,
+        send_status,
+        datetime.now(UTC).isoformat()
+    ))
+    conn.commit()
+    conn.close()
+
 def run_pipeline(topic: str):
     init_db()
 
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY No settings have been made. Please fill in first .env")
+
+    os.makedirs("data/logs", exist_ok=True)
+    os.makedirs("data/generated_content", exist_ok=True)
 
     contacts_df = pd.read_csv("data/contacts.csv")
     contacts = contacts_df.to_dict(orient="records")
@@ -37,11 +71,11 @@ def run_pipeline(topic: str):
     print("\nPersona counts:")
     print(contacts_df["persona_segment"].value_counts())
 
-    print("\n[0/5] Syncing contacts to HubSpot...")
+    print("\n[0/6] Syncing contacts to HubSpot...")
     sync_result = upsert_contacts(contacts)
     print(sync_result)
 
-    print("\n[1/5] Generating content...")
+    print("\n[1/6] Generating content...")
     content = generate_content(topic)
     blog_title = content["blog_title"]
     save_content_run(topic, blog_title, content["_saved_path"])
@@ -57,28 +91,48 @@ def run_pipeline(topic: str):
     print("creative_director:", content["newsletters"]["creative_director"]["subject"])
     print("freelancer:", content["newsletters"]["freelancer"]["subject"])
 
-    print("\n[2/5] Simulating metrics...")
+    print("\n[2/6] Preparing persona-based newsletter sends...")
+    for contact in contacts:
+        persona = contact["persona_segment"]
+        newsletter = content["newsletters"][persona]
+        template_id = EMAIL_TEMPLATE_IDS.get(persona)
+
+        send_result = send_newsletter(contact, newsletter, template_id)
+        print(send_result)
+
+        log_campaign_send(
+            topic=topic,
+            blog_title=blog_title,
+            persona_segment=persona,
+            contact_email=contact["email"],
+            newsletter_subject=newsletter["subject"],
+            hubspot_email_id=template_id,
+            send_status=send_result["status"],
+        )
+
+    print("\n[3/6] Simulating metrics...")
     metrics = simulate_metrics(topic)
     print(metrics)
 
-    print("\n[3/5] Generating AI performance summary...")
+    print("\n[4/6] Generating AI performance summary...")
     summary = generate_performance_summary(topic, metrics)
 
     with open("data/logs/latest_summary.txt", "w", encoding="utf-8") as f:
         f.write(summary)
 
     note_text = (
-    f"Campaign run completed | "
-    f"topic={topic} | "
-    f"blog_title={blog_title} | "
-    f"content_file={content['_saved_path']} | "
-    f"summary_file=data/logs/latest_summary.txt"
-)
+        f"Campaign run completed | "
+        f"topic={topic} | "
+        f"blog_title={blog_title} | "
+        f"content_file={content['_saved_path']} | "
+        f"summary_file=data/logs/latest_summary.txt"
+    )
 
-    print("\n[4/5] Logging campaign note to HubSpot...")
+    print("\n[5/6] Logging campaign note to HubSpot...")
     note_result = create_note(note_text)
     print(note_result)
-    print("\n[5/5] Done.")
+
+    print("\n[6/6] Done.")
     print("\n=== PERFORMANCE SUMMARY ===")
     print(summary)
 
@@ -95,6 +149,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     run_pipeline(args.topic)
+
+
 
 
 

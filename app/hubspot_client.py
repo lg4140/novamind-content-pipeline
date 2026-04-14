@@ -1,3 +1,4 @@
+
 import requests
 from datetime import datetime, UTC
 from app.config import HUBSPOT_ACCESS_TOKEN, HUBSPOT_BASE_URL, DRY_RUN
@@ -60,6 +61,23 @@ def create_note(note_body: str) -> dict:
     response.raise_for_status()
     return response.json()
 
+def send_newsletter(contact: dict, newsletter: dict, email_template_id: str | None) -> dict:
+    payload = {
+        "contact_email": contact["email"],
+        "persona_segment": contact["persona_segment"],
+        "email_template_id": email_template_id,
+        "subject": newsletter["subject"],
+        "preview_text": newsletter["preview_text"],
+        "body": newsletter["body"],
+        "cta_text": newsletter["cta_text"],
+        "send_status": "DRY_RUN" if DRY_RUN else "READY_TO_SEND"
+    }
+
+    if DRY_RUN:
+        return {"status": "DRY_RUN", "payload": payload}
+
+    return {"status": "NOT_IMPLEMENTED", "payload": payload}
+
 def associate_note_to_contact(note_id: str, contact_id: str) -> dict:
     url = f"{HUBSPOT_BASE_URL}/crm/v3/objects/notes/{note_id}/associations/contact/{contact_id}/note_to_contact"
 
@@ -73,6 +91,7 @@ def associate_note_to_contact(note_id: str, contact_id: str) -> dict:
     response = requests.put(url, headers=HEADERS, timeout=30)
     response.raise_for_status()
     return {"status": "associated"}
+
 
 
 

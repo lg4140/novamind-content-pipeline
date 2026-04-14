@@ -67,6 +67,7 @@ novamind-content-pipeline/
 ├── .gitignore
 ├── requirements.txt
 └── README.md
+```
 
 ## Features
 
@@ -128,7 +129,7 @@ pip install -r requirements.txt
 ```
 ### 3. Add environment variables
 Create a .env file in the project root with:
-
+```env
 OPENAI_API_KEY=your_openai_api_key
 HUBSPOT_ACCESS_TOKEN=your_hubspot_private_app_token
 HUBSPOT_BASE_URL=https://api.hubapi.com
@@ -136,51 +137,56 @@ DRY_RUN=true
 OPS_LEAD_EMAIL_ID=
 CREATIVE_DIRECTOR_EMAIL_ID=
 FREELANCER_EMAIL_ID=
+```
 
 ### 4. Run the pipeline
+```bash
 python3 -m app.main --topic "AI in creative automation"
 Example Output
+```
+## Example Output
 
 The pipeline prints:
 
-persona counts
-HubSpot sync payload
-generated blog title
-newsletter subject lines
-simulated campaign metrics
-AI performance summary
-saved file locations
+- persona counts
+- HubSpot sync payload
+- generated blog title
+- newsletter subject lines
+- simulated campaign metrics
+- AI performance summary
+- saved file locations
 
 ### Example output may look like:
 
-blog title: How AI Is Transforming Workflow Automation for Small Creative Agencies
-best-performing persona: freelancer
-suggested next blog topic: Maximizing Productivity with AI-Powered Creative Tools
+- blog title: How AI Is Transforming Workflow Automation for Small Creative Agencies
+- best-performing persona: freelancer
+- suggested next blog topic: Maximizing Productivity with AI-Powered Creative Tools
 
-### Current Status
-Implemented
-local end-to-end pipeline
-AI content generation
-persona-specific newsletter generation
-JSON content storage
-SQLite logging
-HubSpot contact sync in dry-run mode
-HubSpot campaign note logging in dry-run mode
-simulated campaign performance metrics
-AI-generated performance summary
-Not Fully Implemented
-live email sending through HubSpot
-live performance metric pull from a real CRM or email platform
-dashboard or frontend interface
+## Current Status
+- Implemented
+- local end-to-end pipeline
+- AI content generation
+- persona-specific newsletter generation
+- JSON content storage
+- SQLite logging
+- HubSpot contact sync in dry-run mode
+- HubSpot campaign note logging in dry-run mode
+- simulated campaign performance metrics
+- AI-generated performance summary
+- Not Fully Implemented
+- live email sending through HubSpot
+- live performance metric pull from a real CRM or email platform
+- dashboard or frontend interface
 
 ## Future Improvements
-enable live HubSpot contact sync by switching off dry-run mode
-connect persona-based email templates for actual newsletter distribution
-add a dashboard using Streamlit
-support A/B testing for subject lines
-generate next topic recommendations based on historical campaign performance
-add approval or review steps before publishing generated content
+- enable live HubSpot contact sync by switching off dry-run mode
+- connect persona-based email templates for actual newsletter distribution
+- add a dashboard using Streamlit
+- support A/B testing for subject lines
+- generate next topic recommendations based on historical campaign performance
+- add approval or review steps before publishing generated content
 
 ## Why Dry-Run Mode
 Dry-run mode makes the demo safer and more reliable. It allows the system to show realistic HubSpot payloads and workflow design without depending on portal permissions, email template availability, or live sending configuration.
+
 

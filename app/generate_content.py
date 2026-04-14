@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from datetime import datetime, UTC
 from openai import OpenAI
@@ -10,6 +11,9 @@ def slugify(text: str) -> str:
     text = text.lower().strip()
     text = re.sub(r"[^a-z0-9]+", "-", text)
     return text.strip("-")
+
+def word_count(text: str) -> int:
+    return len(text.split())
 
 def generate_content(topic: str) -> dict:
     prompt = f"""
@@ -65,7 +69,42 @@ Topic: {topic}
     )
 
     raw_text = response.output_text
-    data = json.loads(raw_text)
+
+    try:
+        data = json.loads(raw_text)
+    except json.JSONDecodeError:
+        os.makedirs("data/logs", exist_ok=True)
+        with open("data/logs/last_bad_generation.txt", "w", encoding="utf-8") as f:
+            f.write(raw_text)
+        raise ValueError(
+            "Model output was not valid JSON. "
+            "Saved raw output to data/logs/last_bad_generation.txt"
+        )
+
+    required_top_level_keys = {"topic", "blog_title", "blog_outline", "blog_draft", "newsletters"}
+    missing_top_level = required_top_level_keys - set(data.keys())
+    if missing_top_level:
+        raise ValueError(f"Missing required top-level keys: {sorted(missing_top_level)}")
+
+    required_personas = {"ops_lead", "creative_director", "freelancer"}
+    newsletters = data.get("newsletters", {})
+    missing_personas = required_personas - set(newsletters.keys())
+    if missing_personas:
+        raise ValueError(f"Missing newsletter personas: {sorted(missing_personas)}")
+
+    for persona in required_personas:
+        required_newsletter_keys = {"subject", "preview_text", "body", "cta_text"}
+        missing_newsletter_keys = required_newsletter_keys - set(newsletters[persona].keys())
+        if missing_newsletter_keys:
+            raise ValueError(
+                f"Missing newsletter keys for {persona}: {sorted(missing_newsletter_keys)}"
+            )
+
+    blog_words = word_count(data["blog_draft"])
+    if not (400 <= blog_words <= 600):
+        data["_warning"] = f"Blog draft word count out of target range: {blog_words}"
+
+    os.makedirs("data/generated_content", exist_ok=True)
 
     timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     filename = f"data/generated_content/{timestamp}_{slugify(topic)}.json"
@@ -75,6 +114,7 @@ Topic: {topic}
 
     data["_saved_path"] = filename
     return data
+
 
 
 

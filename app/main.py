@@ -2,7 +2,7 @@ import argparse
 from datetime import datetime, UTC
 import os
 import pandas as pd
-
+from app.hubspot_client import upsert_contacts, create_note
 from app.config import OPENAI_API_KEY
 from app.db import init_db, get_conn
 from app.generate_content import generate_content
@@ -31,11 +31,17 @@ def run_pipeline(topic: str):
         raise ValueError("OPENAI_API_KEY No settings have been made. Please fill in first .env")
 
     contacts_df = pd.read_csv("data/contacts.csv")
+    contacts = contacts_df.to_dict(orient="records")
+
     print(f"Loaded {len(contacts_df)} contacts.")
     print("\nPersona counts:")
     print(contacts_df["persona_segment"].value_counts())
 
-    print("\n[1/4] Generating content...")
+    print("\n[0/5] Syncing contacts to HubSpot...")
+    sync_result = upsert_contacts(contacts)
+    print(sync_result)
+
+    print("\n[1/5] Generating content...")
     content = generate_content(topic)
     blog_title = content["blog_title"]
     save_content_run(topic, blog_title, content["_saved_path"])
@@ -51,17 +57,28 @@ def run_pipeline(topic: str):
     print("creative_director:", content["newsletters"]["creative_director"]["subject"])
     print("freelancer:", content["newsletters"]["freelancer"]["subject"])
 
-    print("\n[2/4] Simulating metrics...")
+    print("\n[2/5] Simulating metrics...")
     metrics = simulate_metrics(topic)
     print(metrics)
 
-    print("\n[3/4] Generating AI performance summary...")
+    print("\n[3/5] Generating AI performance summary...")
     summary = generate_performance_summary(topic, metrics)
 
     with open("data/logs/latest_summary.txt", "w", encoding="utf-8") as f:
         f.write(summary)
 
-    print("\n[4/4] Done.")
+    note_text = (
+    f"Campaign run completed | "
+    f"topic={topic} | "
+    f"blog_title={blog_title} | "
+    f"content_file={content['_saved_path']} | "
+    f"summary_file=data/logs/latest_summary.txt"
+)
+
+    print("\n[4/5] Logging campaign note to HubSpot...")
+    note_result = create_note(note_text)
+    print(note_result)
+    print("\n[5/5] Done.")
     print("\n=== PERFORMANCE SUMMARY ===")
     print(summary)
 
@@ -78,6 +95,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     run_pipeline(args.topic)
+
+
+
 
 
 
